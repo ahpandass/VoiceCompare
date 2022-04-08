@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title></title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	</head>
+	<body>
+		<div class="app">
+			<button class="record-btn">开始录音</button>
+			<button class="save-btn">保存录音</button><br />
+			<button class="post-btn">send</button><br />
+			<audio controls class="audio-player"></audio>
+		</div>
+		<script>
+			var stream;
+			if (navigator.mediaDevices.getUserMedia) {
+				const constraints = { audio: true };
+				navigator.mediaDevices.getUserMedia(constraints).then(
+					stream => {
+						console.log("授权成功！");
+
+						const recordBtn = document.querySelector(".record-btn");
+						const saveBtn = document.querySelector(".save-btn");
+						const postBtn = document.querySelector(".post-btn");
+						const audio = document.querySelector(".audio-player");
+						const mediaRecorder = new MediaRecorder(stream);
+
+						var chunks = [];
+
+						recordBtn.onclick = () => {
+							if (mediaRecorder.state === "recording") {
+								mediaRecorder.stop();
+								recordBtn.textContent = "开始录音";
+								console.log("录音结束");
+							} else {
+								chunks = [];
+								mediaRecorder.start();
+								console.log("录音中...");
+								recordBtn.textContent = "结束录音";
+							}
+							console.log("录音器状态：", mediaRecorder.state);
+						};
+
+						mediaRecorder.ondataavailable = function(e) {
+							chunks.push(e.data);
+						};
+						mediaRecorder.onstop = e => {
+							var blob = new Blob(chunks, { type: "audio/ogg; codecs=opus" });
+							var audioURL = window.URL.createObjectURL(blob);
+							audio.src = audioURL;
+						};
+
+						saveBtn.onclick = () => {
+							if (chunks) {
+								const blob = new Blob(chunks, {type: 'audio/wav'})
+								const a= document.createElement("a")
+								a.href = URL.createObjectURL(blob)
+								a.download = "wav" + Date.now() + ".wav" // 这里填保存成的文件名
+								a.click()
+								URL.revokeObjectURL(a.href)
+						　　　	a.remove();
+							}
+						};
+						
+						postBtn.onclick =  () => {
+							if (chunks) {
+								const blob = new Blob(chunks, {type: 'audio/wav'})
+								const response = fetch('/res', {
+								method: 'POST',
+								body: blob, // string or object
+								headers: {
+									'user': 'shan'
+								}
+								});
+							} 
+                            // do something with myJson
+						};
+						
+					}, () => {
+						console.error("授权失败！");
+					}
+				);
+			} else {
+				console.error("浏览器不支持 getUserMedia");
+			}
+		</script>
+	</body>
+</html>
